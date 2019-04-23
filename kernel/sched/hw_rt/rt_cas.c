@@ -135,7 +135,7 @@ retry:
 
 		if (cpu_isolated(cpu))
 			continue;
-		if (!cpumask_test_cpu(cpu, &task->cpus_allowed))
+		if (!cpumask_test_cpu(cpu, task->cpus_ptr))
 			continue;
 
 		if (sched_cpu_high_irqload(cpu))
