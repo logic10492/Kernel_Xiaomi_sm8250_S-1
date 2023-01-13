@@ -28,16 +28,7 @@ function overwrite_config() {
 	scripts/config --file ${OUT_DIR}/.config \
 		--set-str STATIC_USERMODEHELPER_PATH /system/bin/micd \
 		--set-str SYSTEM_TRUSTED_KEYS "" \
-		-e	MIUI_ZRAM_MEMORY_TRACKING\
-		-e	VOYAGER_ADDON		\
-		-e	SCHED_EXT		\
-		-e	WALT_EXT		\
 		-e	MIHW			\
-		-e	PERF_CRITICAL_RT_TASK	\
-		-e	SF_BINDER		\
-		-e	PACKAGE_RUNTIME_INFO	\
-		-e	MILLET			\
-		-e	MIGT_ENERGY_MODEL	\
 		-d	UNICODE
 }
 

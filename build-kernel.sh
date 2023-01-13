@@ -23,6 +23,10 @@ DEFCONFIG_DIR=arch/arm64/configs/vendor/output
 # Set script config dir
 ARGS_DIR=build_config
 
+MULTI_BUILD=0
+
+STAT_FILE="${OUT_DIR}/Version"
+
 #Set csum
 CSUM=$(cksum <<<"${COMMIT}" | cut -f 1 -d ' ')
 
@@ -93,28 +97,67 @@ function clean_up_outfolder() {
 
 function ak3_compress()
 {
+		if [[ ! -d anykernel/out ]]; then
+			mkdir anykernel/out
+		fi
 		cd anykernel || exit
 		zip -r9 "${ZIPNAME}" ./* -x .git .gitignore out/ ./*.zip
 		mv ./*.zip out/
 		cd ../
 }
 
+function check_stat_file() {
+	#Set build count
+	if [ ! -f "${STAT_FILE}" ] || [ ! -d "${OUT_DIR}" ]; then
+		echo "init Version"
+		mkdir -p $OUT_DIR
+		BUILD=1
+		echo "BUILD_COUNT=${BUILD}" > ${STAT_FILE}
+	fi
+}
+
+function stat_print() {
+	cat /dev/null > ${STAT_FILE}    #clean all info
+	{								#Always Print them
+		echo "BUILD_COUNT=${BUILD}"
+		echo "IS_MULTI_BUILD=${MULTI_BUILD}"
+		echo "DEVICE=${DEVICE}"
+		echo "TARGET_OS=${OS}"
+		echo "$ZIPNAME" 
+
+		if [[ MULTI_BUILD -eq 1 ]]; then
+			echo "LIST_DIR=${device_list}"
+		fi
+	} >> "${STAT_FILE}" || export ZIPNAME
+
+	#Only when multi compile
+
+}
+
+function pre_compile() {
+	GET_BUILD_COUNT=$(awk -F "=" '/BUILD_COUNT/ {print $2}' "${STAT_FILE}")
+
+	BUILD=$GET_BUILD_COUNT
+
+	echo "Current version is $GET_BUILD_COUNT"
+	ZIPNAME="Voyager-${DEVICE^^}-build${BUILD}-${OS}-${CSUM}-${DATE}.zip"
+	stat_print
+}
+
+function post_compile() {
+		NEW_COUNT=$((BUILD + 1))
+		echo "Next version is $NEW_COUNT"
+		cat /dev/null > ${STAT_FILE}
+		echo "BUILD_COUNT=${NEW_COUNT}" > ${STAT_FILE}
+}
+
 function start_build() {
 	trap "echo aborting.." 2 || exit 1;
 
+	pre_compile
+
 	if [[ MULTI_BUILD -eq 1 ]] && [[ -d ${OUT_DIR}/arch/arm64/boot/ ]]; then
 		rm -r ${OUT_DIR}/arch/arm64/boot/
-	fi
-
-	#Set build count
-	if [[ -f out/Version ]]; then
-		BUILD=$(cat out/Version)
-	fi
-
-	if [ ! -f "${OUT_DIR}Version" ] || [ ! -d "${OUT_DIR}" ]; then
-		echo "init Version"
-		mkdir -p $OUT_DIR
-		echo 1 >${OUT_DIR}Version
 	fi
 
 	# Start Build
@@ -143,10 +186,6 @@ function start_build() {
 
 	make -j"${KEBABS}" "${ARGS[@]}" CC="ccache clang" HOSTCC="ccache gcc" HOSTCXX="ccache g++" 2>&1 | tee build.log
 
-	ZIPNAME="Voyager-${DEVICE^^}-build${BUILD}-${OS}-${CSUM}-${DATE}.zip"
-	sed -i "N;1a{$ZIPNAME}" ${OUT_DIR}Version
-	export ZIPNAME	
-
 	echo "------ Filename: ${ZIPNAME} ------"
 
 	checkbuild
@@ -155,8 +194,6 @@ function start_build() {
 
 	ak3_compress
 
-	echo $(($BUILD + 1)) >${OUT_DIR}Version
-
 	echo "------ Finishing ${OS^} Build, Device ${DEVICE^^} ------"
 }
 
@@ -164,6 +201,7 @@ function start_build() {
 function new_build_by_list() {
 	clean_up_outfolder
 	export MULTI_BUILD=1
+	check_stat_file
 	export LIST=$device_list
 	j=$(wc -l "${LIST}" | awk -F " " '{print $1}')
 
@@ -176,6 +214,7 @@ function new_build_by_list() {
 		trap "echo aborting.." 2 || exit 1;
 		start_build
 	done
+	post_compile
 }
 
 #
@@ -233,7 +272,9 @@ if [[ "$1" ]]; then
 					DEVICE=$1
 					clean_up_outfolder
 					export MULTI_BUILD=0
+					check_stat_file
 					start_build
+					post_compile
 				;;
 			esac
 		;;
@@ -241,4 +282,3 @@ if [[ "$1" ]]; then
 else
 	echo "Argument is needed"
 fi
-
