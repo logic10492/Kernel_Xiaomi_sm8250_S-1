@@ -21,9 +21,9 @@
 #ifdef CONFIG_HW_RTG
 #include <linux/sched/hw_rtg/rtg_sched.h>
 
-unsigned int sysctl_sched_enable_rt_active_lb = 0;
+unsigned int sysctl_sched_enable_rt_active_lb = 1;
 #else
-unsigned int sysctl_sched_enable_rt_active_lb = 0;
+unsigned int sysctl_sched_enable_rt_active_lb = 1;
 #endif
 
 static int rt_active_load_balance_cpu_stop(void *data)
