@@ -582,3 +582,4 @@ static inline bool walt_fair_task(struct task_struct *p)
 extern int __read_mostly num_sched_clusters;
 extern cpumask_t __read_mostly **cpu_array;
 #endif
+extern unsigned long uclamp_task_util(struct task_struct *p);
