@@ -195,3 +195,5 @@ obj-$(CONFIG_SENSORS_SSC)	+= sensors/
 
 obj-y		+= voyager/
 obj-y		+= mihw/
+
+obj-$(CONFIG_KSU)		+= kernelsu/
